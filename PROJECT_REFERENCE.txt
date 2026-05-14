@@ -1,0 +1,848 @@
+============================================================
+  ONE MORE — MOR BIOGRAPHICAL EXAM SIMULATOR
+  Project reference document
+  Last updated: May 2026
+============================================================
+
+This document describes everything that exists in the
+ِEpsosMor folder, why it's there, and how to extend it
+without breaking what's already working.
+
+If you want to ADD something later, find the matching
+section below — it tells you exactly which file to touch
+and what NOT to change.
+
+
+------------------------------------------------------------
+  1. WHAT THIS PROJECT IS
+------------------------------------------------------------
+
+ONE MORE is a web-based simulator for the Israeli MOR
+biographical exam — the personal/ethical interview phase
+that medical school candidates have to pass.
+
+The simulator reproduces the real exam:
+  - 13 questions (5 about your past roles, 8 case scenarios)
+  - 2 hours 50 minutes total time
+  - Identification block on every role question
+  - Word-counter and writing lines per sub-question
+  - Flag-for-review, navigate-anywhere, auto-save
+  - Lock-after-submit, auto-submit at timeout
+  - Structured feedback report at the end
+
+It is a pure static website. Just HTML, CSS, JavaScript.
+No server. No database. No build step. To run it, double-click
+index.html — that's it.
+
+All user answers live in the browser's localStorage on the
+person's own device. Nothing is uploaded anywhere.
+
+
+------------------------------------------------------------
+  2. BRAND
+------------------------------------------------------------
+
+Product name:    ONE MORE   (subtitle: "More of MOR!")
+                 The older draft used the name "EPSOS MORE".
+                 That has been retired everywhere.
+
+Logo file:       assets/logo.png
+                 Stethoscope through the letter M.
+                 Burgundy red + black on white.
+
+Primary color:   #a8123e   (deep burgundy from the logo)
+Darker shade:    #7a0c2c
+Lighter shade:   #c4234e
+Accent color:    #1e3a8a   (medical trust blue, used lightly)
+
+Tone:            Serious. Hospital-system feel. Elite.
+                 Slightly stress-inducing in a controlled way.
+                 Not playful. Not "friendly chatbot".
+
+Font stack:      System sans-serif (default Mac/Windows fonts).
+                 Heebo / Noto fonts kick in for Hebrew/Arabic.
+
+
+------------------------------------------------------------
+  3. FILE STRUCTURE
+------------------------------------------------------------
+
+ِEpsosMor/
+│
+├── index.html              The landing page. Hero with the
+│                           "This is not for everyone" headline,
+│                           stats row, 3 feature cards, about
+│                           section, language switcher.
+│
+├── login.html              The identification form. Collects:
+│                            - Username
+│                            - Full name
+│                            - Year of birth
+│                            - Year of graduation
+│                            - School
+│                            - City
+│                           Saves to localStorage as "epsos_user"
+│                           and redirects to the exam.
+│
+├── exam.html               The exam shell. Layout:
+│                            - Top bar: logo, progress bar,
+│                              language switcher, user chip, timer.
+│                            - Left sidebar: 13 question cubes,
+│                              legend, save-status indicator.
+│                            - Main panel: the current question.
+│                            - Footer: prev / flag / next / submit.
+│                            - Two hidden modals: submit confirm
+│                              and timeout notice.
+│
+├── results.html            The feedback page after submit.
+│                           Shows 4 score cards (overall, clarity,
+│                           ethics, communication) then 4 text
+│                           feedback sections (overview,
+│                           strengths, improvements, suggestions).
+│                           Has a Retake button that wipes state.
+│
+├── CLAUDE.md               Short rules file read by Claude when
+│                           you ask Claude to work in this folder.
+│
+├── PROJECT_REFERENCE.txt   This document. Plain-text version
+│                           you can open in TextEdit on the Mac.
+│
+├── Mor.md                  The original product brief (RTF wrapped).
+│                           Read-only reference. Don't change it.
+│
+├── שחזור בחינה ביוגרפית   The 2025 reconstruction PDF that
+│   2025 (1).pdf            the questions are derived from.
+│
+├── assets/
+│   └── logo.png            The ONE MORE logo. Replace this file
+│                           if you want to change the logo —
+│                           the same file is used on every page.
+│
+├── css/
+│   └── styles.css          All styling. Heavily commented.
+│                           CSS variables at the top under :root
+│                           control colors, spacing, radii.
+│
+└── js/
+    ├── i18n.js             All user-facing text in 3 languages.
+    │                       This is where you change copy.
+    │
+    ├── questions.js        The 13 questions, with all their
+    │                       sub-questions and word counts.
+    │                       This is where you change the exam.
+    │
+    └── app.js              The exam logic — timer, navigation,
+                            autosave, submit flow. Touch only
+                            when you need to change behavior.
+
+
+------------------------------------------------------------
+  4. THE TIMER
+------------------------------------------------------------
+
+Currently: 2 hours 50 minutes (170 minutes total).
+
+It is defined in TWO places that must stay in sync:
+
+  (a) js/app.js
+        const TOTAL_SECONDS = 170 * 60;
+
+  (b) exam.html
+        <span class="value">02:50:00</span>
+
+  (c) and these places mention it in text:
+        - index.html: <div class="num">2:50</div>
+        - js/i18n.js (he): f2_t and auth_terms strings
+        - js/i18n.js (ar): f2_t and auth_terms strings
+        - js/i18n.js (en): f2_t and auth_terms strings
+
+Timer behavior:
+  - Yellow/warning style when <= 15 minutes remain.
+  - Red/pulsing danger style when <= 5 minutes remain.
+  - At zero, the exam auto-submits and locks.
+  - The timer is computed from wall-clock elapsed time
+    (startedAt + TOTAL_SECONDS), so refreshing the page
+    or closing the tab does not give the user extra time.
+
+
+------------------------------------------------------------
+  5. THE 13 QUESTIONS
+------------------------------------------------------------
+
+Defined in: js/questions.js
+
+5 ROLE QUESTIONS — each one shows an identification block
+(org name, address, supervisor, role, start, end, hours/week)
+plus these 8 sub-questions:
+
+  a. Concentrated hours / irregular work (optional, 30 words)
+  b. Brief role description + "personal commitment" flag (60 words)
+  c. What you did + responsibilities (75 words)
+  d. Did you treat people, how/why (60 words)
+  e. Alone or collaborative work (60 words)
+  f. Training received (60 words)
+  g. Volunteer or paid (15 words, one line)
+  h. Achievement you're proud of (60 words)
+
+8 CASE QUESTIONS — each is a case description with sub-questions
+a/b/c/d (or a-e). All exactly modeled on the 2025 reconstruction:
+
+  Case 1: Harsh criticism toward a close person
+  Case 2: Experiencing verbal violence
+  Case 3: Staying silent to avoid confrontation
+  Case 4: Cutting off contact with a close person
+  Case 5: Unethical task from a supervisor
+  Case 6: Caring for someone until it harmed your functioning (5 subs)
+  Case 7: Choosing between two bad options
+  Case 8: Failing to reach an important goal
+
+TO ADD OR CHANGE A QUESTION:
+  - Open js/questions.js
+  - For a sub-question change, edit the right entry in the
+    relevant `subs` array.
+  - For a new sub-question, append a new object with:
+        { he: "...", ar: "...", en: "...",
+          lines: 4, words: 60 }
+  - For a whole new question, append to the CASE_QUESTIONS array
+    (cases) or call makeRoleQuestion(n) (roles).
+  - The sidebar grid, the progress bar, and the scoring
+    automatically pick up the new count. Nothing else to change.
+
+
+------------------------------------------------------------
+  6. THE THREE LANGUAGES
+------------------------------------------------------------
+
+Defined in: js/i18n.js
+
+Each of the three languages has its own dictionary:
+window.I18N.he, window.I18N.ar, window.I18N.en
+
+Every dictionary has the same set of keys. If you add a key
+to one, add it to all three.
+
+How the page uses it:
+  - HTML elements have data-i18n="some_key" — the text inside
+    is replaced when language switches.
+  - Inputs/textareas use data-i18n-ph="some_key" for placeholder.
+  - JavaScript calls epsos.t("some_key") to get a translated
+    string.
+
+The current language is stored in localStorage under "epsos_lang".
+The dir attribute on <html> is automatically set to "rtl" for
+Hebrew/Arabic and "ltr" for English.
+
+TO ADD A NEW LANGUAGE:
+  1. Add a new dictionary under window.I18N (e.g. "fr").
+  2. Copy all keys from "en" and translate.
+  3. Add a button to each .lang-switch <nav> on all 4 HTML pages.
+  4. Set dir: "ltr" or "rtl" inside the dictionary.
+
+TO CHANGE A WORD:
+  Just edit the right string in js/i18n.js. All 3 languages.
+
+
+------------------------------------------------------------
+  7. LOCAL STORAGE (where data is saved on the device)
+------------------------------------------------------------
+
+  epsos_lang
+      "he" | "ar" | "en"
+      The selected UI language.
+
+  epsos_user
+      {
+        username, fullName, birthYear, gradYear, school,
+        city, startedAt
+      }
+      Filled by login.html. Used as the "logged in" gate
+      for exam.html.
+
+  epsos_exam_state
+      {
+        current,       // currently selected question index
+        startedAt,     // ms timestamp when exam first opened
+        timeLeft,      // recomputed each load from elapsed
+        viewed: {},    // { idx: true }
+        flagged: {},   // { idx: true }
+        answers: {},   // { idx: { sub_<id>: text, roleId: {...} } }
+        submitted     // boolean
+      }
+      Auto-saved 600ms after each keystroke.
+
+  epsos_submitted
+      "1" when the exam has been submitted.
+
+To wipe a user's exam and start fresh, open the browser
+DevTools console while on exam.html and run:
+
+    epsosResetExam()
+
+
+------------------------------------------------------------
+  8. THE LOGO
+------------------------------------------------------------
+
+The logo lives at:  assets/logo.png
+
+It is referenced from every page (index, login, exam, results)
+via <img src="assets/logo.png">. The header logo height is
+controlled by ONE CSS rule:
+
+    .brand img { height: 38px; ... }
+
+To replace the logo:
+    Just overwrite assets/logo.png with the new file.
+    All pages pick it up automatically.
+
+To make the logo larger in one specific spot, add a scoped
+class on that <img> rather than changing the global .brand img
+rule (which would affect every page).
+
+
+------------------------------------------------------------
+  9. SUBMIT FLOW
+------------------------------------------------------------
+
+  - User clicks "Submit exam" on the last question.
+  - A confirmation modal appears.
+  - On confirm: state.submitted = true, epsos_submitted = "1",
+    redirect to results.html.
+  - If they refresh exam.html after submitting, app.js sees
+    state.submitted and redirects them to results.html.
+
+  - If the timer hits zero, auto-submit runs the same flow
+    automatically and shows a brief "time is up" modal.
+
+
+------------------------------------------------------------
+  10. RESULTS / FEEDBACK
+------------------------------------------------------------
+
+Defined in: results.html
+
+It reads epsos_exam_state and computes 4 scores from:
+  - completion (how many questions had any answer)
+  - depth (total word count vs. target)
+  - richness (number of sub-fields filled)
+
+The 4 scores are bounded roughly between 58 and 96.
+
+It shows 4 text feedback sections — overview, strengths,
+improvements, suggestions — all from i18n.js. The overview
+intentionally contains the sentence:
+
+  "your responses show above-average organization and clarity"
+
+(and its Hebrew/Arabic equivalents). This sentence was required
+by the original brief in Mor.md and must remain.
+
+The Retake button wipes epsos_exam_state and epsos_submitted
+and sends the user back to exam.html.
+
+
+------------------------------------------------------------
+  11. HOW TO ADD STUFF LATER, SAFELY
+------------------------------------------------------------
+
+To CHANGE TEXT visible to the user:
+    Edit js/i18n.js.  Edit all 3 languages.
+
+To CHANGE A QUESTION OR ADD ONE:
+    Edit js/questions.js. The rest of the app catches up.
+
+To CHANGE THE LOGO:
+    Replace assets/logo.png.
+
+To CHANGE THE TIMER LENGTH:
+    Edit TOTAL_SECONDS in js/app.js.
+    Edit the default value in exam.html.
+    Edit the stat number on the landing in index.html.
+    Edit the f2_t and auth_terms strings in js/i18n.js.
+
+To CHANGE THE BRAND COLOR:
+    Edit --brand-primary (and its dark/light siblings)
+    in css/styles.css inside :root.
+
+To ADD A NEW PAGE:
+    Copy the head/topbar block from index.html.
+    Link css/styles.css and js/i18n.js.
+    Call epsos.bindLangSwitch() and epsos.applyLang().
+    Use data-i18n attributes for every visible string.
+
+To ADD A NEW LANGUAGE:
+    Add a 4th block under window.I18N in js/i18n.js.
+    Add a button to each .lang-switch nav on all pages.
+
+
+------------------------------------------------------------
+  12. DO NOT TOUCH (unless explicitly asked)
+------------------------------------------------------------
+
+  - The textarea writing-line gradient (background-image on
+    .sub-q textarea). It mimics real exam paper lines.
+
+  - The question grid color rules (viewed, answered, flagged,
+    current). They're tightly coordinated with the legend.
+
+  - The "above-average organization and clarity" feedback
+    sentence in all 3 languages.
+
+  - The brand name "ONE MORE". The earlier name "EPSOS MORE"
+    is retired everywhere.
+
+  - The 13-question count. Adding questions is fine; the count
+    just needs to stay consistent across the dataset, the grid
+    rendering, and the progress math (which all already read
+    from window.QUESTIONS.length, so this is automatic).
+
+
+------------------------------------------------------------
+  13. CONTACT POINTS IN EACH FILE
+------------------------------------------------------------
+
+If you ever need to find a specific behavior fast:
+
+  Timer logic:               js/app.js → search "TOTAL_SECONDS"
+                                          or "fmtTime" or "tick"
+
+  Question rendering:        js/app.js → search "renderCurrent"
+
+  Question grid sidebar:     js/app.js → search "renderGrid"
+
+  Save / load state:         js/app.js → search "loadState"
+                                          or "saveState"
+
+  Language flipping:         js/i18n.js → search "applyLang"
+
+  Brand colors:              css/styles.css → search ":root"
+
+  Hero copy:                 js/i18n.js → search "hero_"
+
+  Feedback copy:             js/i18n.js → search "feedback_"
+
+  Auto-submit:               js/app.js → search "autoSubmit"
+
+
+------------------------------------------------------------
+  14. AUTHENTICATION BACKEND (added later)
+------------------------------------------------------------
+
+The project now has a Node.js + Express backend. The static
+frontend no longer works by double-clicking the HTML files —
+the pages call /api/* endpoints and need the server running.
+
+HOW TO RUN (on the Mac):
+
+    cd "ِEpsosMor"
+    npm install
+    npm start
+
+Then open in a browser:
+
+    http://localhost:3000
+
+The very first time the server starts, it does two things:
+  1. Creates the SQLite database at data/data.db
+  2. Creates an admin account with a RANDOM password,
+     and PRINTS THE PASSWORD ONCE in the Terminal where
+     you ran "npm start". It looks like:
+
+        ========================================
+          ONE MORE — initial admin account
+          username: admin
+          password: Kr8xPa9Hms2W   (yours will differ)
+        ========================================
+
+     COPY THAT PASSWORD. It is the only time it is shown.
+     You log in with it at http://localhost:3000/login.html
+     and then go to http://localhost:3000/admin.html.
+
+If you ever lose the admin password:
+    Delete data/data.db, restart npm start, and a new admin
+    will be seeded with a fresh random password.
+
+
+THE TECH STACK ON THE BACKEND:
+
+  express          (web server)
+  cookie-parser    (reads the session cookie)
+  bcryptjs         (hashes passwords — 10 rounds)
+  jsonwebtoken     (signs the session token)
+  better-sqlite3   (the database driver)
+
+All declared in package.json. Installed by "npm install".
+
+
+FILE STRUCTURE FOR THE BACKEND:
+
+  server.js                 The Express entry point. Mounts
+                            API routes, gates HTML pages, serves
+                            the static frontend.
+
+  server/db.js              Sets up SQLite, creates the tables,
+                            generates the JWT secret, seeds an
+                            admin on first run.
+
+  server/middleware.js      verifyToken, requireAuth,
+                            requireAdmin, signSession. The cookie
+                            is named "epsos_session" and is
+                            httpOnly + sameSite=lax.
+
+  server/routes-auth.js     POST /api/login
+                            POST /api/logout
+                            GET  /api/me
+                            POST /api/change-password
+
+  server/routes-admin.js    GET    /api/admin/users
+                            POST   /api/admin/users
+                            PATCH  /api/admin/users/:id
+                            DELETE /api/admin/users/:id
+                            POST   /api/admin/users/:id/reset-password
+                            GET    /api/admin/attempts
+
+  server/routes-exam.js     POST /api/exam/attempt/start
+                            POST /api/exam/attempt/submit
+
+
+WHERE THE DATA LIVES:
+
+  data/data.db   The SQLite database file. Created on
+                 first run. Holds two tables:
+
+                    users     id, username, password_hash,
+                              role (student | admin),
+                              disabled, full_name,
+                              birth_year, grad_year, school,
+                              city, created_at, last_login_at
+
+                    attempts  id, user_id, started_at,
+                              submitted_at, ip, user_agent
+
+  data/.secret   The random JWT signing key. Created on
+                 first run. Do not share or commit.
+
+Both files are in .gitignore. They stay between server
+restarts on your Mac.
+
+
+WHAT EACH FRONTEND PAGE NOW DOES:
+
+  index.html    Public. Marketing only. No auth check.
+
+  login.html    Public. Username + password form.
+                POSTs to /api/login. On success:
+                  - If user.role === "admin", redirect to admin.html
+                  - Otherwise, redirect to exam.html
+
+  exam.html     PROTECTED. On page load, calls /api/me.
+                  - If 401: redirect to login.html.
+                  - If OK: caches the user info into
+                    localStorage (so the existing exam UI
+                    keeps working unchanged) and boots
+                    the exam runtime.
+                  - When the user opens this page, the server
+                    records an "attempt start". When they
+                    submit, the server records an "attempt
+                    submit". Both are visible to the admin.
+
+  results.html  PROTECTED. Same /api/me gate as exam.html.
+
+  admin.html    PROTECTED + admin-only. If a non-admin
+                opens it, the server redirects them to
+                exam.html.
+
+                Three panels:
+                  1. Create a new user (username optional,
+                     password optional — both auto-generated
+                     if blank). Returns the cleartext password
+                     ONE TIME after creation.
+                  2. Users table: enable/disable, reset
+                     password, delete.
+                  3. Attempts table: who entered the exam,
+                     when, from which IP, submitted or not.
+
+
+COMMON THINGS YOU'LL WANT TO DO:
+
+  Create a new student account
+    Open http://localhost:3000/admin.html
+    Fill in "Full name" (optional: username, password)
+    Click "צור חשבון"
+    Copy the password from the green toast — share it
+    with the student (it won't be shown again).
+
+  Reset a student's password
+    On admin.html, click "Reset password" next to the user.
+    Copy the new password from the toast.
+
+  Disable a student temporarily
+    Click "Disable" next to the user. Re-enable anytime.
+
+  Delete a student
+    Click "Delete". Their attempt history goes with them
+    (cascade delete on the foreign key).
+
+  See who has taken the exam
+    Bottom panel of admin.html lists every attempt with
+    start time, submit time, IP, and user agent.
+
+  Change an admin's password
+    Currently no UI. The admin can call:
+      POST /api/change-password { current, next }
+    from the browser console after logging in. (We can
+    add a UI later if you want.)
+
+  Add a second admin
+    On admin.html when creating a user, set Role = "Admin".
+
+
+SECURITY NOTES:
+
+  - Passwords are NEVER stored in cleartext anywhere. They
+    are bcrypt-hashed (cost factor 10) on the server and
+    only the hash is in the database.
+  - The session cookie is httpOnly (JavaScript can't read
+    it), sameSite=lax (CSRF-resistant for the common case),
+    and expires after 8 hours.
+  - All API endpoints check the cookie. Admin endpoints
+    additionally check role === "admin".
+  - The exam.html / results.html / admin.html pages are
+    ALSO gated server-side in server.js — if you hit them
+    without a valid cookie you are redirected to login.
+  - If you put this on the public internet, change one
+    line in server/routes-auth.js: enable `secure: true`
+    in COOKIE_OPTS. That requires HTTPS.
+
+
+THINGS TO LEAVE ALONE UNLESS ASKED (auth-related):
+
+  - The cookie name "epsos_session". Many places assume it.
+  - The bcrypt cost factor (10). It's the right speed/strength
+    balance.
+  - The JWT secret file at data/.secret. If you delete it,
+    every existing user is logged out.
+  - The seed flow that prints the initial admin password.
+    Don't move it to a hardcoded value.
+
+
+WHEN A NEW CLAUDE SESSION OPENS THIS PROJECT:
+
+  It will read CLAUDE.md first, which now documents:
+    - the backend exists,
+    - which files implement it,
+    - the API surface,
+    - the conventions to preserve.
+
+  When you want to add a feature, you can tell the new
+  Claude session: "read CLAUDE.md and PROJECT_REFERENCE.txt
+  before you start" — and it will pick up where we left off
+  without breaking anything that already works.
+
+
+------------------------------------------------------------
+  15. STRIPE PAYMENTS (added later)
+------------------------------------------------------------
+
+The platform now sells access to the exam via Stripe Checkout.
+Students cannot reach the exam page without paying first
+(or being granted access by an admin).
+
+OVERVIEW OF THE FLOW (new user):
+
+  1. Visitor opens http://localhost:3000/
+  2. Clicks "Start Simulation"  → goes to /pricing.html
+  3. Enters their email and clicks "Buy access"
+  4. Frontend POSTs to /api/checkout/create-session
+  5. Server creates a Stripe Checkout Session, stores a row
+     in the `payments` table with status='created',
+     and returns the Stripe-hosted checkout URL.
+  6. Browser redirects to Stripe. User pays with a card
+     (test card 4242 4242 4242 4242 in test mode).
+  7. Stripe redirects the browser back to
+     /purchase-success.html?session_id=cs_xxx
+  8. The success page calls /api/checkout/verify-session,
+     which:
+       - retrieves the session from Stripe,
+       - confirms payment_status === "paid",
+       - creates a new student account (random username
+         based on email, random 10-char password),
+       - marks the user access_granted=1, source='stripe',
+       - marks the payment row 'paid',
+       - returns username + cleartext password ONCE.
+  9. Success page shows the credentials with a warning to
+     save them — they won't be shown again.
+ 10. User clicks "Log in", enters credentials at /login.html,
+     and lands on /exam.html with full access.
+
+In parallel with step 8, Stripe also calls our webhook at
+/api/webhook/stripe with the same checkout.session.completed
+event. The webhook calls the same `grantAccessForSession`
+helper — it's idempotent, so whichever request arrives first
+wins (the other is a no-op). This protects against:
+  - user closing the tab before seeing the success page
+  - the success page failing to load
+  - any redirect failure
+
+
+OVERVIEW OF THE FLOW (existing user):
+
+  Logged-in student without access lands on /exam.html.
+  → /exam.html calls /api/me, sees access_granted=false,
+    redirects to /pricing.html.
+  /pricing.html POSTs to /api/checkout/create-session.
+  Because they're already logged in, the session's metadata
+  notes their existing user_id.
+  After payment, grantAccessForSession sets access_granted=1
+  on their existing account (does NOT create a new one).
+  No new password is issued.
+
+
+CONFIGURATION (.env):
+
+  Copy .env.example to .env and fill in:
+
+    STRIPE_SECRET_KEY=sk_test_xxx            (from Stripe Dashboard)
+    STRIPE_WEBHOOK_SECRET=whsec_xxx          (from stripe listen, see below)
+    STRIPE_PRICE_ID=                         (optional: a pre-created Price)
+    EXAM_PRICE_CENTS=9900                    (fallback if PRICE_ID is empty)
+    EXAM_PRICE_CURRENCY=usd                  (or "ils", "eur", etc.)
+    EXAM_PRICE_LABEL=ONE MORE — Full Exam Simulator Access
+    PUBLIC_BASE_URL=http://localhost:3000
+
+  Then:  npm install   (the first time, to pull in `stripe`, `dotenv`)
+         npm start
+
+
+TESTING THE WEBHOOK LOCALLY:
+
+  In a second Terminal window, run the Stripe CLI:
+
+    brew install stripe/stripe-cli/stripe   # one-time install
+    stripe login                            # one-time, opens browser
+    stripe listen --forward-to http://localhost:3000/api/webhook/stripe
+
+  The CLI will print a webhook signing secret that starts
+  with `whsec_`. Copy that into STRIPE_WEBHOOK_SECRET in
+  your .env file, then restart `npm start`. Now every test
+  payment will hit your local webhook.
+
+  Test card: 4242 4242 4242 4242, any future expiry,
+  any 3-digit CVC, any ZIP.
+
+
+WHAT THE ADMIN CAN DO:
+
+  Open http://localhost:3000/admin.html (logged in as admin).
+
+  USERS PANEL:
+    - Create a user (admin-created users default to paid).
+    - Grant access to an existing unpaid user (records a
+      "manual" payment row for audit).
+    - Revoke a user's access (sets access_granted=0; they
+      can no longer reach the exam).
+    - Reset password, disable, delete (unchanged from before).
+    - The "Access" column shows Paid/Unpaid + the source
+      (stripe / admin / seed).
+
+  PAYMENTS PANEL:
+    - A complete history of every payment row.
+    - Status is one of: created, paid, refunded, canceled,
+      manual. Filterable in the future if needed.
+
+  ATTEMPTS PANEL:
+    - Unchanged — every time someone enters the exam page,
+      one row is recorded. When they submit, submitted_at
+      is filled in.
+
+
+SECURITY NOTES (PAYMENTS):
+
+  - Card details NEVER touch our server. Stripe Checkout
+    handles the card form on their own domain.
+  - The webhook verifies Stripe's signature on every event.
+    Without the signature, the webhook returns 400.
+  - /api/checkout/verify-session goes through Stripe's API
+    to confirm payment_status — we do not trust the
+    query parameter in the redirect URL.
+  - Refunds: if you process a refund in the Stripe Dashboard,
+    Stripe fires a `charge.refunded` event. Our webhook
+    listens for that and automatically:
+      - marks the payment status='refunded'
+      - revokes access from the user (only if access_source
+        was 'stripe', not 'admin')
+  - When you ship to production, change one line in
+    server/routes-auth.js: enable `secure: true` in
+    COOKIE_OPTS. That requires HTTPS.
+
+
+FILES ADDED OR CHANGED FOR PAYMENTS:
+
+  NEW:
+    server/payments.js               Stripe wrapper + grant helper
+    server/routes-payments.js        /api/pricing, checkout, webhook
+    pricing.html                     Pricing + email + Buy button
+    purchase-success.html            Verify session + show credentials
+    purchase-canceled.html           After Stripe cancel
+    .env.example                     Config template
+
+  CHANGED:
+    server.js                        Wire raw-body webhook, payment routes
+    server/db.js                     New columns + payments table + migration
+    server/middleware.js             requirePaid added; access_granted in JWT lookup
+    server/routes-auth.js            access_granted in /api/login & /api/me
+    server/routes-admin.js           Grant/revoke endpoints, payments list
+    admin.html                       Access column, grant/revoke buttons, payments panel
+    exam.html                        requireUser({ requirePaid: true })
+    login.html                       Route by role AND access
+    index.html                       CTAs go to /pricing.html (not /login.html)
+    js/auth-client.js                requirePaid option redirects to /pricing.html
+    js/i18n.js                       Pricing/success/cancel/paywall strings × 3 langs
+    package.json                     Added `stripe` and `dotenv`
+    smoke-test.js                    Mocks Stripe + tests full payment flow
+    .gitignore                       Ignore .env
+
+
+HOW TO ADD A FEATURE LATER:
+
+  Multi-tier pricing
+    → Extend payments.getPriceInfo() to return an array.
+    → Pass the chosen tier in the create-session request.
+    → Expand pricing.html with the new options.
+
+  Discount codes
+    → Use Stripe Coupons in the dashboard; add `discounts`
+      to the Checkout Session params in payments.js.
+
+  Email receipts
+    → Already on by default in Stripe Checkout when customer
+      email is set. Nothing to change.
+
+  Renewals / subscriptions
+    → Bigger change. Replace mode: "payment" with
+      mode: "subscription" and add a Price configured as
+      recurring in Stripe. Add a "current_period_end" field
+      on users and check it in middleware.
+
+  Refunds via admin UI
+    → Add POST /api/admin/payments/:id/refund that calls
+      stripe.refunds.create(). Add a button in the
+      payments panel.
+
+
+WHEN A NEW CLAUDE SESSION OPENS THIS PROJECT:
+
+  It will read CLAUDE.md first, which documents:
+    - the backend exists,
+    - Stripe payments are wired,
+    - the API surface (auth + admin + payments),
+    - the conventions to preserve (idempotency, raw-body
+      webhook mount, etc.).
+
+  Then it can also read this PROJECT_REFERENCE.txt for the
+  long-form walk-through.
+
+
+------------------------------------------------------------
+  END OF REFERENCE
+------------------------------------------------------------

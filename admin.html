@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONE MORE — חדר ניהול</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .admin-wrap { max-width: 1200px; margin: 0 auto; padding: 32px 24px 60px; }
+    .admin-h {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+    }
+    .admin-h h1 { margin: 0; font-size: 26px; letter-spacing: -.01em; }
+    .admin-h .pill { background: rgba(168,18,62,.08); color: var(--brand-primary); padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+
+    .panel {
+      background: var(--bg-elev); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 22px;
+      margin-bottom: 22px;
+    }
+    .panel h2 {
+      margin: 0 0 16px; font-size: 17px; font-weight: 700;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .panel h2 .count {
+      font-size: 12px; color: var(--text-soft); font-weight: 500;
+    }
+
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.tbl th, table.tbl td { text-align: start; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    table.tbl th { color: var(--text-soft); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    table.tbl tbody tr:hover { background: var(--bg-soft); }
+    table.tbl td.actions { white-space: nowrap; }
+    table.tbl td.actions .btn { padding: 5px 10px; font-size: 12px; }
+    .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+    .badge.admin { background: rgba(30,58,138,.1); color: var(--brand-accent); }
+    .badge.student { background: var(--bg-soft); color: var(--text-muted); }
+    .badge.disabled { background: #fef2f2; color: var(--danger); }
+    .badge.active { background: #ecfdf5; color: var(--success); }
+    .badge.paid { background: #ecfdf5; color: var(--success); }
+    .badge.unpaid { background: #fef3c7; color: #92400e; }
+    .badge.refunded { background: #fef2f2; color: var(--danger); }
+    .badge.created { background: var(--bg-soft); color: var(--text-muted); }
+    .badge.manual { background: rgba(30,58,138,.1); color: var(--brand-accent); }
+    .badge.stripe { background: #ede9fe; color: #6d28d9; }
+    .badge.admin-src { background: rgba(30,58,138,.1); color: var(--brand-accent); }
+    .badge.seed { background: var(--bg-soft); color: var(--text-soft); }
+
+    .create-form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .create-form .field { margin: 0; }
+    .create-form .field.full { grid-column: span 4; }
+    .create-form button { grid-column: span 4; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--text); color: #fff; padding: 14px 22px;
+      border-radius: var(--radius); font-size: 14px;
+      box-shadow: var(--shadow-lg); z-index: 200;
+      max-width: 90%;
+    }
+    .toast.success { background: #065f46; }
+    .toast.error { background: var(--danger); }
+    .toast code { background: rgba(255,255,255,.15); padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); }
+
+    .empty { color: var(--text-soft); padding: 22px; text-align: center; font-size: 14px; }
+
+    @media (max-width: 720px) {
+      .create-form { grid-template-columns: 1fr 1fr; }
+      .create-form .field.full { grid-column: span 2; }
+      .create-form button { grid-column: span 2; }
+      table.tbl th.hide-sm, table.tbl td.hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="admin.html" class="brand">
+        <img src="assets/logo.png" alt="ONE MORE" />
+        <span class="brand-tag">Admin</span>
+      </a>
+      <span class="spacer"></span>
+      <span class="user-chip">
+        <span class="dot"></span>
+        <span id="admin-name">—</span>
+      </span>
+      <button id="btn-logout" class="btn btn-sm">Log out</button>
+    </div>
+  </header>
+
+  <main class="admin-wrap">
+    <div class="admin-h">
+      <h1>חדר ניהול · Admin room</h1>
+      <span class="pill">ONE MORE</span>
+    </div>
+
+    <!-- Create user -->
+    <section class="panel">
+      <h2>צור משתמש חדש <span class="count" id="created-hint"></span></h2>
+      <form class="create-form" id="create-form" autocomplete="off">
+        <div class="field">
+          <label>שם משתמש <small style="color:var(--text-soft)">(אופציונלי)</small></label>
+          <input type="text" name="username" placeholder="auto-generated if blank" />
+        </div>
+        <div class="field">
+          <label>שם מלא</label>
+          <input type="text" name="full_name" placeholder="ישראל ישראלי" />
+        </div>
+        <div class="field">
+          <label>אימייל</label>
+          <input type="email" name="email" placeholder="student@example.com" />
+        </div>
+        <div class="field">
+          <label>תפקיד</label>
+          <select name="role">
+            <option value="student" selected>Student</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>שנת לידה</label>
+          <input type="number" name="birth_year" min="1960" max="2015" />
+        </div>
+        <div class="field">
+          <label>שנת סיום</label>
+          <input type="number" name="grad_year" min="1980" max="2030" />
+        </div>
+        <div class="field">
+          <label>בית ספר</label>
+          <input type="text" name="school" />
+        </div>
+        <div class="field">
+          <label>יישוב</label>
+          <input type="text" name="city" />
+        </div>
+        <div class="field">
+          <label>סיסמה <small style="color:var(--text-soft)">(אופציונלי)</small></label>
+          <input type="text" name="password" placeholder="auto-generated, ≥ 8 chars" />
+        </div>
+        <button type="submit" class="btn btn-primary">צור חשבון</button>
+      </form>
+    </section>
+
+    <!-- Users list -->
+    <section class="panel">
+      <h2>משתמשים <span class="count" id="users-count"></span></h2>
+      <div id="users-table"></div>
+    </section>
+
+    <!-- Payments -->
+    <section class="panel">
+      <h2>תשלומים <span class="count" id="payments-count"></span></h2>
+      <div id="payments-table"></div>
+    </section>
+
+    <!-- Attempts -->
+    <section class="panel">
+      <h2>היסטוריית כניסה לבחינה <span class="count" id="attempts-count"></span></h2>
+      <div id="attempts-table"></div>
+    </section>
+  </main>
+
+  <script src="js/auth-client.js"></script>
+  <script>
+    // ----- toast helper -----
+    function toast(msg, kind) {
+      const t = document.createElement("div");
+      t.className = "toast " + (kind || "");
+      t.innerHTML = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), kind === "success" ? 8000 : 4000);
+    }
+
+    // ----- format helpers -----
+    function fmtDate(ts) { if (!ts) return "—"; const d = new Date(+ts); return d.toLocaleString(); }
+    function escapeHtml(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      })[c]);
+    }
+
+    // ----- render users -----
+    let users = [];
+    async function loadUsers() {
+      const r = await epsosAuth.api("/api/admin/users");
+      if (!r.ok) return toast("Failed to load users", "error");
+      users = await r.json();
+      document.getElementById("users-count").textContent = "(" + users.length + ")";
+      const host = document.getElementById("users-table");
+      if (!users.length) { host.innerHTML = '<div class="empty">No users yet.</div>'; return; }
+      host.innerHTML = `
+        <table class="tbl">
+          <thead><tr>
+            <th>Username</th><th>Full name</th><th>Email</th><th>Role</th>
+            <th>Status</th><th>Access</th>
+            <th class="hide-sm">Created</th><th class="hide-sm">Last login</th>
+            <th class="actions">Actions</th>
+          </tr></thead>
+          <tbody>
+          ${users.map(u => `
+            <tr data-id="${u.id}">
+              <td><strong>${escapeHtml(u.username)}</strong></td>
+              <td>${escapeHtml(u.full_name || "")}</td>
+              <td style="font-size:12px;color:var(--text-muted);">${escapeHtml(u.email || "")}</td>
+              <td><span class="badge ${u.role}">${u.role}</span></td>
+              <td>${u.disabled ? '<span class="badge disabled">Disabled</span>' : '<span class="badge active">Active</span>'}</td>
+              <td>${u.role === 'admin' ? '—' : (u.access_granted
+                  ? `<span class="badge paid">Paid</span> <span class="badge ${u.access_source === 'admin' ? 'admin-src' : (u.access_source === 'seed' ? 'seed' : 'stripe')}" style="font-size:10px;">${u.access_source || ''}</span>`
+                  : '<span class="badge unpaid">Unpaid</span>')}</td>
+              <td class="hide-sm">${fmtDate(u.created_at)}</td>
+              <td class="hide-sm">${fmtDate(u.last_login_at)}</td>
+              <td class="actions">
+                ${u.role !== 'admin' ? (u.access_granted
+                  ? `<button class="btn btn-sm btn-danger" data-act="revoke" data-id="${u.id}">Revoke access</button>`
+                  : `<button class="btn btn-sm" data-act="grant" data-id="${u.id}">Grant access</button>`) : ''}
+                <button class="btn btn-sm" data-act="reset" data-id="${u.id}">Reset password</button>
+                <button class="btn btn-sm" data-act="toggle" data-id="${u.id}">${u.disabled ? "Enable" : "Disable"}</button>
+                <button class="btn btn-sm btn-danger" data-act="delete" data-id="${u.id}">Delete</button>
+              </td>
+            </tr>
+          `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ----- render attempts -----
+    async function loadAttempts() {
+      const r = await epsosAuth.api("/api/admin/attempts");
+      if (!r.ok) return;
+      const rows = await r.json();
+      document.getElementById("attempts-count").textContent = "(" + rows.length + ")";
+      const host = document.getElementById("attempts-table");
+      if (!rows.length) { host.innerHTML = '<div class="empty">No exam attempts yet.</div>'; return; }
+      host.innerHTML = `
+        <table class="tbl">
+          <thead><tr>
+            <th>User</th><th>Started</th><th>Submitted</th>
+            <th class="hide-sm">IP</th><th class="hide-sm">User agent</th>
+          </tr></thead>
+          <tbody>
+          ${rows.map(a => `
+            <tr>
+              <td><strong>${escapeHtml(a.username)}</strong>${a.full_name ? " · " + escapeHtml(a.full_name) : ""}</td>
+              <td>${fmtDate(a.started_at)}</td>
+              <td>${a.submitted_at ? fmtDate(a.submitted_at) : '<span style="color:var(--text-soft)">in progress…</span>'}</td>
+              <td class="hide-sm">${escapeHtml(a.ip || "")}</td>
+              <td class="hide-sm" style="font-size:11px;color:var(--text-soft);">${escapeHtml((a.user_agent || "").slice(0, 80))}</td>
+            </tr>
+          `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ----- render payments -----
+    async function loadPayments() {
+      const r = await epsosAuth.api("/api/admin/payments");
+      if (!r.ok) return;
+      const rows = await r.json();
+      document.getElementById("payments-count").textContent = "(" + rows.length + ")";
+      const host = document.getElementById("payments-table");
+      if (!rows.length) { host.innerHTML = '<div class="empty">No payments yet.</div>'; return; }
+      host.innerHTML = `
+        <table class="tbl">
+          <thead><tr>
+            <th>When</th><th>User</th><th>Email</th><th>Amount</th><th>Status</th>
+            <th class="hide-sm">Stripe session</th>
+          </tr></thead>
+          <tbody>
+          ${rows.map(p => {
+            const amt = p.amount_cents != null
+              ? (p.amount_cents / 100).toLocaleString(undefined, { style: "currency", currency: (p.currency || "usd").toUpperCase() })
+              : "—";
+            return `
+              <tr>
+                <td>${fmtDate(p.completed_at || p.created_at)}</td>
+                <td>${p.username ? `<strong>${escapeHtml(p.username)}</strong>` : "<em style='color:var(--text-soft)'>n/a</em>"}${p.full_name ? " · " + escapeHtml(p.full_name) : ""}</td>
+                <td style="font-size:12px;color:var(--text-muted);">${escapeHtml(p.email || "")}</td>
+                <td>${amt}</td>
+                <td><span class="badge ${p.status}">${p.status}</span></td>
+                <td class="hide-sm" style="font-size:11px;color:var(--text-soft);font-family:var(--font-mono);">${escapeHtml(p.stripe_session_id || "")}</td>
+              </tr>
+            `;
+          }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ----- create user -----
+    document.getElementById("create-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const body = {};
+      for (const [k, v] of fd.entries()) {
+        if (v === "" || v == null) continue;
+        if (k === "birth_year" || k === "grad_year") body[k] = +v;
+        else body[k] = v;
+      }
+      const r = await epsosAuth.api("/api/admin/users", { method: "POST", body });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        toast("Failed: " + (j.error || r.status), "error");
+        return;
+      }
+      e.target.reset();
+      toast(`Created <strong>${escapeHtml(j.username)}</strong> · password: <code>${escapeHtml(j.password)}</code><br><small>Copy this password now — it will not be shown again.</small>`, "success");
+      loadUsers();
+    });
+
+    // ----- actions (event delegation) -----
+    document.getElementById("users-table").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const act = btn.dataset.act;
+      const user = users.find(u => u.id == id);
+
+      if (act === "delete") {
+        if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) return;
+        const r = await epsosAuth.api("/api/admin/users/" + id, { method: "DELETE" });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); return toast("Failed: " + (j.error || r.status), "error"); }
+        toast("Deleted.", "success");
+        loadUsers(); loadAttempts();
+      } else if (act === "toggle") {
+        const r = await epsosAuth.api("/api/admin/users/" + id, {
+          method: "PATCH",
+          body: { disabled: !user.disabled }
+        });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); return toast("Failed: " + (j.error || r.status), "error"); }
+        toast(user.disabled ? "Enabled." : "Disabled.", "success");
+        loadUsers();
+      } else if (act === "reset") {
+        if (!confirm(`Reset password for "${user.username}"?`)) return;
+        const r = await epsosAuth.api("/api/admin/users/" + id + "/reset-password", { method: "POST" });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return toast("Failed: " + (j.error || r.status), "error");
+        toast(`New password for <strong>${escapeHtml(user.username)}</strong>: <code>${escapeHtml(j.password)}</code><br><small>Copy this password now — it will not be shown again.</small>`, "success");
+      } else if (act === "grant") {
+        const r = await epsosAuth.api("/api/admin/users/" + id + "/grant-access", { method: "POST" });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); return toast("Failed: " + (j.error || r.status), "error"); }
+        toast(`Access granted to <strong>${escapeHtml(user.username)}</strong>.`, "success");
+        loadUsers(); loadPayments();
+      } else if (act === "revoke") {
+        if (!confirm(`Revoke exam access for "${user.username}"? They won't be able to take the exam until access is restored.`)) return;
+        const r = await epsosAuth.api("/api/admin/users/" + id + "/revoke-access", { method: "POST" });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); return toast("Failed: " + (j.error || r.status), "error"); }
+        toast(`Access revoked for <strong>${escapeHtml(user.username)}</strong>.`, "success");
+        loadUsers();
+      }
+    });
+
+    document.getElementById("btn-logout").addEventListener("click", () => epsosAuth.logout());
+
+    // boot
+    epsosAuth.requireUser({ role: "admin" }).then(u => {
+      if (!u) return;
+      document.getElementById("admin-name").textContent = u.full_name || u.username;
+      loadUsers();
+      loadPayments();
+      loadAttempts();
+    });
+  </script>
+</body>
+</html>

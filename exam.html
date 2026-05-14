@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONE MORE — סימולציית בחינה</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="exam-mode">
+  <header class="exam-topbar">
+    <div class="exam-topbar-inner">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="ONE MORE" />
+      </a>
+      <div>
+        <div class="exam-progress" aria-label="progress"><span id="exam-progress-bar"></span></div>
+        <div id="progress-label" style="text-align:center; font-size:12px; color: var(--text-soft); margin-top:6px;"></div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
+        <nav class="lang-switch" aria-label="Language">
+          <button data-lang="he">HE</button>
+          <button data-lang="ar">AR</button>
+          <button data-lang="en">EN</button>
+        </nav>
+        <span class="user-chip">
+          <span class="dot"></span>
+          <span data-user-name>—</span>
+        </span>
+        <span id="plan-chip" class="plan-chip" style="display:none;">
+          <span class="plan-chip-label" data-i18n="plan_chip">תוכנית</span>
+          <strong id="plan-chip-name">—</strong>
+          <span class="plan-chip-sep">·</span>
+          <span id="plan-chip-attempts">—</span>
+        </span>
+        <button id="btn-logout" class="btn btn-sm btn-ghost" type="button" title="" data-i18n="auth_logout">התנתק</button>
+        <span id="timer" class="timer">
+          <span class="pulse-dot"></span>
+          <span class="value">02:50:00</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <div class="exam-shell">
+    <aside class="exam-side">
+      <h4 data-i18n="exam_questions">שאלות</h4>
+      <div id="q-grid" class="q-grid"></div>
+      <div class="legend">
+        <span><i></i><span data-i18n="legend_unviewed">טרם נצפה</span></span>
+        <span><i class="viewed"></i><span data-i18n="legend_viewed">נצפה</span></span>
+        <span><i class="answered"></i><span data-i18n="legend_answered">נענה</span></span>
+        <span><i class="flagged"></i><span data-i18n="legend_flagged">מסומן בדגל</span></span>
+      </div>
+      <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px;">
+        <span id="save-status" class="save-status"></span>
+      </div>
+    </aside>
+
+    <section class="exam-main" id="q-main"></section>
+  </div>
+
+  <div style="max-width: 1280px; margin: -8px auto 32px; padding: 0 24px;">
+    <div class="q-footer" style="background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 22px;">
+      <button id="btn-prev" class="btn"><span data-i18n="prev">הקודם</span></button>
+      <button id="btn-flag" class="flag-btn" type="button">
+        <span>⚑</span>
+        <span class="label" data-i18n="flag">סמן בדגל</span>
+      </button>
+      <span class="spacer"></span>
+      <button id="btn-next" class="btn btn-primary"><span data-i18n="next">הבא</span></button>
+      <button id="btn-submit" class="btn btn-primary" style="display:none;"><span data-i18n="submit">סיים בחינה</span></button>
+    </div>
+  </div>
+
+  <!-- Submit confirm modal -->
+  <div class="modal-back" id="submit-modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 data-i18n="submit_title">לסיים את הבחינה?</h3>
+      <p data-i18n="submit_msg">לאחר ההגשה לא תוכל לערוך עוד את התשובות שלך.</p>
+      <div class="actions">
+        <button id="submit-cancel" class="btn" data-i18n="submit_cancel">חזרה לבחינה</button>
+        <button id="submit-confirm" class="btn btn-primary" data-i18n="submit_confirm">כן, הגש בחינה</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeout modal -->
+  <div class="modal-back" id="timeout-modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 data-i18n="timeout_title">הזמן הסתיים</h3>
+      <p data-i18n="timeout_msg">הבחינה הוגשה אוטומטית. תועבר עכשיו לדף המשוב.</p>
+    </div>
+  </div>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/auth-client.js"></script>
+  <script src="js/questions.js"></script>
+  <script>
+    epsos.bindLangSwitch();
+    epsos.applyLang();
+
+    // Wire logout
+    document.getElementById("btn-logout").addEventListener("click", () => epsosAuth.logout());
+
+    // Auth-gate the exam: must be a logged-in student (or admin).
+    // Also sync localStorage `epsos_user` with the real session so app.js
+    // (which reads from localStorage) keeps working unchanged.
+    epsosAuth.requireUser({ requirePaid: true }).then(async (u) => {
+      if (!u) return;
+      localStorage.setItem("epsos_user", JSON.stringify({
+        username: u.username,
+        fullName: u.full_name || u.username,
+        birthYear: u.birth_year,
+        gradYear: u.grad_year,
+        school: u.school,
+        city: u.city,
+        role: u.role,
+        plan: u.plan || "plus",
+        startedAt: Date.now()
+      }));
+
+      // Fetch plan status BEFORE starting an attempt — so we can show the
+      // "no more simulations" screen instead of silently booting a dead exam.
+      let status = null;
+      try {
+        const r = await epsosAuth.api("/api/exam/status");
+        if (r && r.ok) status = await r.json();
+      } catch (e) {}
+
+      // Render the plan chip in the topbar
+      if (status) {
+        const chip = document.getElementById("plan-chip");
+        const name = document.getElementById("plan-chip-name");
+        const att  = document.getElementById("plan-chip-attempts");
+        if (chip) {
+          chip.style.display = "inline-flex";
+          chip.classList.add("plan-" + status.plan);
+        }
+        if (name) name.textContent = status.plan;
+        if (att) {
+          // Format: "Simulation 1 of 5" when premium has multiple; "1 of 1" otherwise
+          const current = Math.min(status.used_attempts + 1, status.max_attempts);
+          att.textContent = current + " " + epsos.t("sim_of") + " " + status.max_attempts;
+        }
+        window.__epsosPlanStatus = status;
+
+        // No simulations remaining — render the upgrade screen and stop.
+        if (status.remaining_attempts <= 0 && !status.has_active_attempt) {
+          document.getElementById("q-main").innerHTML =
+            '<div style="text-align:center; padding: 60px 24px;">' +
+            '  <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>' +
+            '  <h2 style="margin:0 0 8px;" data-i18n="sim_no_more_h">' + epsos.t("sim_no_more_h") + '</h2>' +
+            '  <p style="color: var(--text-muted); max-width: 520px; margin: 0 auto 24px;" data-i18n="sim_no_more_msg">' + epsos.t("sim_no_more_msg") + '</p>' +
+            '  <a href="pricing.html?plan=premium" class="btn btn-primary btn-lg" data-i18n="sim_upgrade">' + epsos.t("sim_upgrade") + '</a>' +
+            '</div>';
+          // Also hide the sidebar/footer that don't apply here
+          const side = document.querySelector(".exam-side"); if (side) side.style.display = "none";
+          return;
+        }
+      }
+
+      // Log attempt start (fire-and-forget)
+      epsosAuth.api("/api/exam/attempt/start", { method: "POST" })
+        .then(r => r.ok ? r.json() : null)
+        .then(j => { if (j && j.attempt_id) window.__epsosAttemptId = j.attempt_id; })
+        .catch(() => {});
+
+      // Hook submit + auto-submit to also notify the server
+      const origSubmit = document.getElementById("submit-confirm");
+      const origAutoNotify = () => {
+        epsosAuth.api("/api/exam/attempt/submit", {
+          method: "POST",
+          body: { attempt_id: window.__epsosAttemptId }
+        }).catch(() => {});
+      };
+      if (origSubmit) origSubmit.addEventListener("click", origAutoNotify, { capture: true });
+      // Auto-submit on timeout — listen for the timeout modal opening
+      const tm = document.getElementById("timeout-modal");
+      if (tm) {
+        const obs = new MutationObserver(() => {
+          if (tm.classList.contains("open")) { origAutoNotify(); obs.disconnect(); }
+        });
+        obs.observe(tm, { attributes: true, attributeFilter: ["class"] });
+      }
+
+      // Boot the existing exam runtime now that we're authenticated.
+      const s = document.createElement("script");
+      s.src = "js/app.js";
+      document.body.appendChild(s);
+    });
+  </script>
+</body>
+</html>

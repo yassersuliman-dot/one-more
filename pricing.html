@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONE MORE — מחירים</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="luxury-mode">
+
+  <!-- Ambient cinematic background -->
+  <div class="lux-bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <canvas id="lux-particles"></canvas>
+    <span class="streak"></span>
+    <span class="streak"></span>
+    <span class="streak"></span>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="ONE MORE" />
+        <span class="brand-tag">More of MOR</span>
+      </a>
+      <span class="spacer"></span>
+      <nav class="lang-switch" aria-label="Language">
+        <button data-lang="he">עברית</button>
+        <button data-lang="ar">العربية</button>
+        <button data-lang="en">English</button>
+      </nav>
+      <a href="login.html" class="nav-login" data-i18n="nav_login_short">התחברות</a>
+    </div>
+  </header>
+
+  <main class="lux-checkout">
+    <div class="lux-checkout-card" data-reveal>
+      <span class="selected-plan">
+        <span class="dot"></span>
+        <span data-i18n="checkout_plan">החבילה שנבחרה</span>
+        ·
+        <span id="plan-label" data-i18n="plan_plus">Plus</span>
+      </span>
+
+      <h1 data-i18n="pricing_h">סימולציה אחת. הזדמנות אחת.</h1>
+      <p class="sub" data-i18n="pricing_sub">תשלום חד-פעמי.</p>
+
+      <div class="price-amount" id="price-display">—</div>
+      <div class="price-label" id="price-label" data-i18n="stat_time_lbl">סימולציה מלאה</div>
+
+      <ul class="feature-list">
+        <li data-i18n="pricing_feat_1">סימולציית בחינה מלאה</li>
+        <li data-i18n="pricing_feat_2">13 שאלות מבוססות על שחזורי הבחינה</li>
+        <li data-i18n="pricing_feat_3">טיימר חי, אוטוסייב</li>
+        <li data-i18n="pricing_feat_4">משוב מובנה לאחר ההגשה</li>
+        <li data-i18n="pricing_feat_5">תמיכה ב-3 שפות</li>
+      </ul>
+
+      <form id="buy-form" autocomplete="off" style="text-align:start;">
+        <div class="field">
+          <label data-i18n="pricing_email_label">כתובת אימייל</label>
+          <input type="email" id="email" required data-i18n-ph="pricing_email_ph" placeholder="your@email.com" />
+        </div>
+        <p style="font-size:12px; color:var(--lux-silver-soft); margin: -6px 0 16px;" data-i18n="pricing_email_hint">פרטי החשבון יוצגו לאחר התשלום.</p>
+
+        <div id="buy-error" class="form-error" style="display:none;"></div>
+
+        <button type="submit" id="buy-submit" class="btn btn-primary btn-lg" style="width:100%;">
+          <span data-i18n="pricing_buy_now">רכוש גישה</span>
+        </button>
+      </form>
+
+      <div class="secure-note" data-i18n="pricing_secure" style="margin-top:18px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">תשלום מאובטח · Stripe</div>
+
+      <div class="login-link" style="margin-top:26px; font-size:14px;">
+        <span data-i18n="pricing_already">כבר יש לך חשבון?</span>
+        <a href="login.html" data-i18n="pricing_login_link" style="font-weight:600;">התחבר כאן</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site">
+    © <span class="gold">ONE MORE</span> · MOR Biographical Exam Simulator
+  </footer>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/landing.js"></script>
+  <script>
+    try { epsos.bindLangSwitch(); epsos.applyLang(); } catch (e) { console.warn(e); }
+    try { if (window.epsosLanding) epsosLanding.init(); } catch (e) { console.warn(e); }
+    setTimeout(function () {
+      document.querySelectorAll("[data-reveal]:not(.in)").forEach(function (el) { el.classList.add("in"); });
+    }, 3000);
+
+    // Read ?plan= param and reflect in label
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const plan = (params.get("plan") || "plus").toLowerCase();
+      const key = plan === "basic" ? "plan_basic" : plan === "premium" ? "plan_premium" : "plan_plus";
+      const label = document.getElementById("plan-label");
+      if (label) {
+        label.setAttribute("data-i18n", key);
+        label.textContent = (window.epsos && epsos.t) ? epsos.t(key) : plan;
+      }
+      // Persist for the buy form
+      window.__selectedPlan = plan;
+    })();
+
+    // Format currency — defaults to ₪ if API returns ILS (which is our new pricing).
+    function fmtMoney(cents, currency) {
+      const cur = (currency || "ils").toLowerCase();
+      const major = (cents || 0) / 100;
+      try {
+        return new Intl.NumberFormat(undefined, {
+          style: "currency", currency: cur.toUpperCase(),
+          maximumFractionDigits: 2
+        }).format(major);
+      } catch (e) {
+        // Older / unsupported locales — fall back to manual ₪ rendering
+        return "₪" + major.toFixed(2);
+      }
+    }
+
+    const buyBtn = document.getElementById("buy-submit");
+    const errEl = document.getElementById("buy-error");
+    function showErr(msg) { errEl.textContent = msg; errEl.style.display = "block"; }
+    function clearErr() { errEl.style.display = "none"; }
+
+    // Fetch price info to display — use the plan-specific price when the API supports it
+    fetch("/api/pricing").then(r => r.json()).then(p => {
+      if (!p.configured) {
+        showErr("Payment is not yet configured on this server.");
+        buyBtn.disabled = true;
+        document.getElementById("price-display").textContent = "—";
+        return;
+      }
+      const plan = window.__selectedPlan || "plus";
+      const planEntry = (p.plans && p.plans[plan]) || null;
+      const cents = planEntry ? planEntry.amount_cents : p.amount_cents;
+      const currency = planEntry ? planEntry.currency : p.currency;
+      const label = planEntry ? planEntry.label : (p.label || "");
+
+      document.getElementById("price-display").innerHTML = fmtMoney(cents, currency);
+      document.getElementById("price-label").textContent = label;
+    }).catch(() => {});
+
+    document.getElementById("buy-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearErr();
+      buyBtn.disabled = true;
+      const email = document.getElementById("email").value.trim();
+      try {
+        const r = await fetch("/api/checkout/create-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ email, plan: window.__selectedPlan })
+        });
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          showErr(body.message || ("Error: " + (body.error || r.status)));
+          buyBtn.disabled = false;
+          return;
+        }
+        const j = await r.json();
+        if (j.url) window.location.href = j.url;
+        else { showErr("No redirect URL returned."); buyBtn.disabled = false; }
+      } catch (err) {
+        showErr(epsos.t("err_network"));
+        buyBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

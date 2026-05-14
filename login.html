@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONE MORE — כניסה לסימולטור</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="luxury-mode">
+
+  <div class="lux-bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <span class="streak"></span>
+    <span class="streak"></span>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="ONE MORE" />
+        <span class="brand-tag">More of MOR</span>
+      </a>
+      <span class="spacer"></span>
+      <nav class="lang-switch" aria-label="Language">
+        <button data-lang="he">עברית</button>
+        <button data-lang="ar">العربية</button>
+        <button data-lang="en">English</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="auth-wrap">
+    <form class="auth-card" id="auth-form" autocomplete="off">
+      <h1 data-i18n="auth_h">כניסה לסימולטור</h1>
+      <p class="sub" data-i18n="auth_sub">הזן שם משתמש וסיסמה שקיבלת מהמנהל.</p>
+
+      <div class="field">
+        <label data-i18n="auth_username">שם משתמש</label>
+        <input type="text" id="username" required minlength="2" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label data-i18n="auth_password">סיסמה</label>
+        <input type="password" id="password" required minlength="6" autocomplete="current-password" />
+      </div>
+
+      <div id="login-error" class="form-error" style="display:none;"></div>
+
+      <div class="divider"></div>
+
+      <p class="sub" style="font-size: 13px;" data-i18n="auth_terms">בלחיצה על 'התחל בחינה' אתה מאשר שהנך מוכן לתחילת סימולציה של 2 שעות ו-50 דקות.</p>
+
+      <button type="submit" class="btn btn-primary btn-lg" id="login-submit" style="width: 100%;" data-i18n="auth_continue">התחל בחינה</button>
+    </form>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script>
+    epsos.bindLangSwitch();
+    epsos.applyLang();
+
+    const errEl = document.getElementById("login-error");
+    const btn = document.getElementById("login-submit");
+
+    function showErr(key) {
+      errEl.textContent = epsos.t(key);
+      errEl.style.display = "block";
+    }
+    function clearErr() { errEl.style.display = "none"; errEl.textContent = ""; }
+
+    document.getElementById("auth-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearErr();
+      btn.disabled = true;
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const r = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ username, password })
+        });
+
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          if (body.error === "account_disabled") showErr("err_disabled");
+          else showErr("err_invalid_credentials");
+          btn.disabled = false;
+          return;
+        }
+
+        const user = await r.json();
+        // Keep the legacy localStorage shape that the exam page reads from
+        localStorage.setItem("epsos_user", JSON.stringify({
+          username: user.username,
+          fullName: user.full_name || user.username,
+          birthYear: user.birth_year,
+          gradYear: user.grad_year,
+          school: user.school,
+          city: user.city,
+          role: user.role,
+          startedAt: Date.now()
+        }));
+
+        if (user.role === "admin") window.location.href = "admin.html";
+        else if (!user.access_granted) window.location.href = "pricing.html";
+        else window.location.href = "exam.html";
+      } catch (err) {
+        showErr("err_network");
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

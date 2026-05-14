@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONE MORE — תשלום הושלם</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .ok-wrap { max-width: 640px; margin: 0 auto; padding: 80px 24px 100px; position: relative; z-index: 2; }
+    .ok-card {
+      background: var(--lux-glass-bg);
+      border: 1px solid var(--lux-glass-border-strong);
+      border-radius: 24px;
+      box-shadow: var(--lux-shadow-card), 0 0 60px rgba(212,175,90,.12);
+      backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+      padding: 44px; text-align: center; color: var(--lux-white);
+    }
+    .ok-card h1 { color: var(--lux-white); }
+    .ok-card p, .ok-card .sub { color: var(--lux-silver); }
+    .ok-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(212,175,90,.15);
+      border: 1px solid rgba(243,212,139,.5);
+      color: var(--lux-gold-bright);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 34px; margin-bottom: 18px;
+      box-shadow: 0 0 24px rgba(212,175,90,.35);
+    }
+    .cred-block {
+      background: rgba(11,18,32,.55); border-radius: 14px; padding: 22px;
+      text-align: start; margin: 22px 0;
+      border: 1px dashed rgba(212,175,90,.28);
+    }
+    .cred-block h3 { color: var(--lux-gold-soft); }
+    .cred-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+    .cred-row .lbl { width: 110px; color: var(--lux-silver); font-size: 13px; }
+    .cred-row .val {
+      font-family: var(--font-mono); font-size: 15px; flex: 1;
+      background: rgba(11,18,32,.85); padding: 8px 12px; border-radius: 8px;
+      border: 1px solid rgba(212,175,90,.22); user-select: all;
+      color: var(--lux-white);
+    }
+    .cred-row button {
+      background: var(--lux-gold-grad); color: var(--lux-navy-900); border:0; padding: 7px 12px;
+      border-radius: 8px; font-size:12px; cursor:pointer; font-weight: 700;
+    }
+    .warn-box {
+      background: rgba(243,212,139,.10); color: var(--lux-gold-bright);
+      border: 1px solid rgba(243,212,139,.4);
+      border-radius: 10px; padding: 10px 14px; font-size: 13px;
+      margin: 18px 0;
+    }
+  </style>
+</head>
+<body class="luxury-mode">
+
+  <div class="lux-bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <span class="streak"></span>
+    <span class="streak"></span>
+  </div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="ONE MORE" />
+      </a>
+      <span class="spacer"></span>
+      <nav class="lang-switch" aria-label="Language">
+        <button data-lang="he">עברית</button>
+        <button data-lang="ar">العربية</button>
+        <button data-lang="en">English</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="ok-wrap">
+    <div class="ok-card" id="card">
+      <div class="ok-icon">✓</div>
+      <h1 id="title" style="margin:0 0 8px;" data-i18n="success_verifying">מאמת תשלום...</h1>
+      <p id="msg" style="color: var(--lux-silver); margin: 0;"></p>
+
+      <div id="credentials-block" class="cred-block" style="display:none;">
+        <h3 style="margin: 0 0 12px; font-size: 14px;" data-i18n="success_credentials_h">פרטי הכניסה שלך:</h3>
+        <div class="cred-row">
+          <span class="lbl" data-i18n="success_username_label">שם משתמש</span>
+          <span class="val" id="cred-username"></span>
+          <button data-copy="cred-username">Copy</button>
+        </div>
+        <div class="cred-row">
+          <span class="lbl" data-i18n="success_password_label">סיסמה</span>
+          <span class="val" id="cred-password"></span>
+          <button data-copy="cred-password">Copy</button>
+        </div>
+        <div class="warn-box" data-i18n="success_save_warn">⚠ שמור את הסיסמה. היא לא תוצג שוב.</div>
+      </div>
+
+      <div id="actions" style="display:none; margin-top: 18px;">
+        <a href="login.html" class="btn btn-primary btn-lg" style="width:100%;" data-i18n="success_continue">התחבר לסימולטור</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script>
+    epsos.bindLangSwitch();
+    epsos.applyLang();
+
+    const title = document.getElementById("title");
+    const msg = document.getElementById("msg");
+    const credBlock = document.getElementById("credentials-block");
+    const actions = document.getElementById("actions");
+
+    function getSessionId() {
+      const u = new URL(window.location.href);
+      return u.searchParams.get("session_id");
+    }
+
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest("button[data-copy]");
+      if (!t) return;
+      const v = document.getElementById(t.dataset.copy).textContent;
+      navigator.clipboard.writeText(v).then(() => { t.textContent = "✓"; setTimeout(() => t.textContent = "Copy", 1200); });
+    });
+
+    (async () => {
+      const sid = getSessionId();
+      if (!sid) {
+        title.textContent = epsos.t("success_err");
+        msg.textContent = "Missing session_id.";
+        return;
+      }
+      try {
+        const r = await fetch("/api/checkout/verify-session?session_id=" + encodeURIComponent(sid), {
+          credentials: "same-origin"
+        });
+        if (!r.ok) {
+          title.textContent = epsos.t("success_err");
+          const body = await r.json().catch(() => ({}));
+          msg.textContent = body.message || body.error || ("HTTP " + r.status);
+          return;
+        }
+        const j = await r.json();
+        title.textContent = epsos.t(j.password ? "success_h" : "success_returning_h");
+        msg.textContent = epsos.t(j.password ? "success_msg" : "success_returning_msg");
+
+        if (j.password) {
+          document.getElementById("cred-username").textContent = j.user.username;
+          document.getElementById("cred-password").textContent = j.password;
+          credBlock.style.display = "block";
+        }
+        actions.style.display = "block";
+      } catch (err) {
+        title.textContent = epsos.t("success_err");
+        msg.textContent = String(err.message || err);
+      }
+    })();
+  </script>
+</body>
+</html>

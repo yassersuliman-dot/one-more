@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONE MORE — תשלום בוטל</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .x-wrap { max-width: 560px; margin: 0 auto; padding: 80px 24px 100px; text-align: center; position: relative; z-index: 2; }
+    .x-card {
+      background: var(--lux-glass-bg);
+      border: 1px solid var(--lux-glass-border-strong);
+      border-radius: 24px; padding: 44px;
+      box-shadow: var(--lux-shadow-card);
+      backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+      color: var(--lux-white);
+    }
+    .x-card h1 { color: var(--lux-white); }
+    .x-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(220,38,38,.18); color: #fecaca;
+      border: 1px solid rgba(220,38,38,.4);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 30px; margin-bottom: 18px;
+    }
+  </style>
+</head>
+<body class="luxury-mode">
+
+  <div class="lux-bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+  </div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="ONE MORE" />
+      </a>
+      <span class="spacer"></span>
+      <nav class="lang-switch" aria-label="Language">
+        <button data-lang="he">עברית</button>
+        <button data-lang="ar">العربية</button>
+        <button data-lang="en">English</button>
+      </nav>
+    </div>
+  </header>
+  <main class="x-wrap">
+    <div class="x-card">
+      <div class="x-icon">✕</div>
+      <h1 style="margin: 0 0 8px;" data-i18n="cancel_h">התשלום בוטל</h1>
+      <p style="color: var(--lux-silver);" data-i18n="cancel_msg">לא חויבת.</p>
+      <a href="pricing.html" class="btn btn-primary" style="margin-top: 18px;" data-i18n="cancel_back">חזרה לדף המחירים</a>
+    </div>
+  </main>
+  <script src="js/i18n.js"></script>
+  <script>
+    epsos.bindLangSwitch();
+    epsos.applyLang();
+  </script>
+</body>
+</html>
