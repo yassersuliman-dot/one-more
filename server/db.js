@@ -127,8 +127,46 @@ if (fs.existsSync(SECRET_PATH)) {
   fs.writeFileSync(SECRET_PATH, secret, { mode: 0o600 });
 }
 
-/* -------- Seed admin if none -------- */
+/* -------- Seed / ensure admin --------
+   Two modes:
+   1) ADMIN_USERNAME + ADMIN_PASSWORD both set in env  → ensure that admin
+      exists with that password. Creates if missing, updates the password
+      hash if it already exists. Idempotent — safe to run every boot.
+   2) Neither env var set → original behavior: on first boot only (no admin
+      yet), seed `admin` with a random password and print it to console once.
+   The env-var path is how the production deploy on Railway works — the
+   password lives only in Railway's env settings, never in git. */
 function seedAdminIfMissing() {
+  const envUser = (process.env.ADMIN_USERNAME || "").trim();
+  const envPass = process.env.ADMIN_PASSWORD || "";
+
+  // Mode 1: env-driven (production)
+  if (envUser && envPass) {
+    const now = Date.now();
+    const hash = bcrypt.hashSync(envPass, 10);
+    const existing = db.prepare("SELECT id FROM users WHERE username = ? COLLATE NOCASE").get(envUser);
+    if (existing) {
+      db.prepare(`
+        UPDATE users
+           SET password_hash = ?,
+               role = 'admin',
+               disabled = 0,
+               access_granted = 1,
+               access_source = COALESCE(access_source, 'seed')
+         WHERE id = ?
+      `).run(hash, existing.id);
+      console.log(`[admin] ensured admin user "${envUser}" (password from ADMIN_PASSWORD env var)`);
+    } else {
+      db.prepare(`
+        INSERT INTO users (username, password_hash, role, full_name, access_granted, access_source, access_granted_at, created_at)
+        VALUES (?, ?, 'admin', ?, 1, 'seed', ?, ?)
+      `).run(envUser, hash, "System Administrator", now, now);
+      console.log(`[admin] created admin user "${envUser}" (password from ADMIN_PASSWORD env var)`);
+    }
+    return { username: envUser, fromEnv: true };
+  }
+
+  // Mode 2: legacy random seed (only if no admin exists yet)
   const row = db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get();
   if (row.n > 0) return null;
 
@@ -147,6 +185,7 @@ function seedAdminIfMissing() {
   console.log("  username:", username);
   console.log("  password:", password);
   console.log("  ➜ change it after first login.");
+  console.log("  ➜ Or set ADMIN_USERNAME + ADMIN_PASSWORD env vars to control it.");
   console.log("========================================\n");
   return { username, password };
 }

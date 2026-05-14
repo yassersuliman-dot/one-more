@@ -1,5 +1,7 @@
 node_modules/
 data/data.db
+data/data.db-shm
+data/data.db-wal
 data/.secret
 .env
 .env.local
