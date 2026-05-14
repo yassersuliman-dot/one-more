@@ -40,6 +40,29 @@ app.use(express.json({ limit: "256kb" }));
 app.use(cookieParser());
 
 /* ----------------------------------------------------------------
+   Clean public URLs for pricing & legal pages
+   Each one explicitly serves the matching .html file so the page
+   resolves regardless of static middleware / proxy behaviour.
+   Both `/terms` and `/terms.html` work; both are public.
+---------------------------------------------------------------- */
+const CLEAN_PAGE_ROUTES = {
+  "/pricing": "pricing.html",
+  "/terms":   "terms.html",
+  "/privacy": "privacy.html",
+  "/refund":  "refund.html"
+};
+Object.entries(CLEAN_PAGE_ROUTES).forEach(([route, file]) => {
+  app.get(route, (req, res) => {
+    res.sendFile(path.join(__dirname, file), (err) => {
+      if (err) {
+        console.error("Failed to serve " + file + ":", err.message);
+        if (!res.headersSent) res.status(500).send("Page unavailable");
+      }
+    });
+  });
+});
+
+/* ----------------------------------------------------------------
    API
 ---------------------------------------------------------------- */
 app.use("/api", authRoutes);
@@ -56,7 +79,10 @@ app.use("/api", paymentRoutes);
 ---------------------------------------------------------------- */
 const PUBLIC_PAGES = new Set([
   "/", "/index.html", "/login.html",
-  "/pricing.html", "/purchase-success.html", "/purchase-canceled.html"
+  "/pricing.html", "/purchase-success.html", "/purchase-canceled.html",
+  "/terms.html", "/privacy.html", "/refund.html",
+  // Clean URLs (handled explicitly above, but listed here for clarity)
+  "/pricing", "/terms", "/privacy", "/refund"
 ]);
 const PAID_PAGES = new Set(["/exam.html", "/results.html"]);
 const ADMIN_PAGES = new Set(["/admin.html"]);

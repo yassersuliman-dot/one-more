@@ -1799,6 +1799,81 @@ body.luxury-mode .fb-actions {
   body.luxury-mode .fb-grid { grid-template-columns: 1fr; }
 }
 
+/* ============================================================
+   LEGAL PAGES (Terms / Privacy / Refund)
+   ============================================================ */
+body.luxury-mode .legal-wrap {
+  max-width: 880px; margin: 0 auto;
+  padding: 80px 24px 100px;
+  position: relative; z-index: 2;
+}
+body.luxury-mode .legal-card {
+  background: var(--lux-glass-bg);
+  border: 1px solid var(--lux-glass-border);
+  border-radius: 22px;
+  padding: 48px 44px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--lux-shadow-card);
+  color: var(--lux-white);
+}
+body.luxury-mode .legal-card .eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--lux-gold-soft); font-weight: 600;
+  padding: 6px 14px; border: 1px solid rgba(212,175,90,.32);
+  background: rgba(212,175,90,.06); border-radius: 999px;
+  margin-bottom: 18px;
+}
+body.luxury-mode .legal-card h1 {
+  font-size: clamp(28px, 4vw, 40px); margin: 0 0 6px;
+  letter-spacing: -.02em; color: var(--lux-white);
+}
+body.luxury-mode .legal-card .updated {
+  color: var(--lux-silver-soft); font-size: 13px; margin-bottom: 32px;
+}
+body.luxury-mode .legal-card h2 {
+  font-size: 19px; margin: 32px 0 10px;
+  color: var(--lux-gold-soft);
+  letter-spacing: -.005em;
+}
+body.luxury-mode .legal-card h2:first-of-type { margin-top: 8px; }
+body.luxury-mode .legal-card p,
+body.luxury-mode .legal-card li {
+  color: var(--lux-silver);
+  font-size: 15px; line-height: 1.75;
+}
+body.luxury-mode .legal-card ul, body.luxury-mode .legal-card ol {
+  margin: 8px 0 14px; padding-inline-start: 22px;
+}
+body.luxury-mode .legal-card li { margin-bottom: 6px; }
+body.luxury-mode .legal-card a {
+  color: var(--lux-gold-bright);
+  border-bottom: 1px solid rgba(212,175,90,.4);
+}
+body.luxury-mode .legal-card a:hover { text-decoration: none; border-bottom-color: var(--lux-gold-bright); }
+
+body.luxury-mode .legal-actions {
+  display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap;
+}
+
+/* Footer link row */
+body.luxury-mode footer.site .foot-links {
+  margin-top: 12px;
+  display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+}
+body.luxury-mode footer.site .foot-links a {
+  color: var(--lux-silver-soft);
+  font-size: 12px; letter-spacing: .04em;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color .25s ease, border-color .25s ease;
+}
+body.luxury-mode footer.site .foot-links a:hover {
+  color: var(--lux-gold-bright);
+  border-bottom-color: var(--lux-gold);
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   body.luxury-mode *,

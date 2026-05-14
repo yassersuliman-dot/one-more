@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONE MORE — מדיניות פרטיות</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="luxury-mode">
+
+  <div class="lux-bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="ONE MORE" />
+        <span class="brand-tag">More of MOR</span>
+      </a>
+      <span class="spacer"></span>
+      <nav class="lang-switch" aria-label="Language">
+        <button data-lang="he">עברית</button>
+        <button data-lang="ar">العربية</button>
+        <button data-lang="en">English</button>
+      </nav>
+      <a href="login.html" class="nav-login" data-i18n="nav_login_short">התחברות</a>
+    </div>
+  </header>
+
+  <main class="legal-wrap">
+    <article class="legal-card">
+      <span class="eyebrow">ONE MORE · MOR Simulator</span>
+      <h1>מדיניות פרטיות</h1>
+      <p class="updated">עודכן לאחרונה: מאי 2026</p>
+
+      <p>
+        אנו ב-ONE MORE מכבדים את פרטיות המשתמשים שלנו, ומחויבים לשמירה על המידע האישי שאתה מספק לנו. מדיניות זו מסבירה איזה מידע אנו אוספים, למה, כיצד הוא נשמר, ועם מי הוא משותף. השימוש בשירות מהווה הסכמה למדיניות זו.
+      </p>
+
+      <h2>1. המידע שאנו אוספים</h2>
+      <ul>
+        <li><strong>פרטי חשבון:</strong> שם משתמש, כתובת דוא"ל, סיסמה מוצפנת (bcrypt).</li>
+        <li><strong>פרטים אישיים שאתה מזין בעת הסימולציה:</strong> שם מלא, שנת לידה, בית-ספר, יישוב, שנת סיום לימודים, ותשובותיך הפתוחות לשאלות הסימולציה.</li>
+        <li><strong>פרטי תשלום:</strong> נאספים ועוברים <em>ישירות</em> דרך ספק התשלומים Stripe. ONE MORE אינה רואה, אינה מאחסנת ואינה ניגשת אל פרטי כרטיס האשראי שלך. אנו שומרים אצלנו רק מזהה עסקה ופרטי חבילה.</li>
+        <li><strong>מידע טכני:</strong> כתובת IP, סוג דפדפן, סוג מערכת הפעלה, ועוגיית הפעלה (cookie) להזדהות (httpOnly).</li>
+      </ul>
+
+      <h2>2. למה אנחנו אוספים את המידע</h2>
+      <ul>
+        <li>לאפשר לך להיכנס לשירות, לזהות אותך ולהגן על חשבונך.</li>
+        <li>לעבד את התשלום ולהקצות לך גישה לחבילה שרכשת.</li>
+        <li>להפיק את הניתוח האישי / המשוב האסטרטגי עבור החבילות הרלוונטיות.</li>
+        <li>לשפר את השירות, לזהות תקלות, ולמנוע שימוש לרעה.</li>
+        <li>לעמוד בדרישות חוקיות והנהלת חשבונות.</li>
+      </ul>
+
+      <h2>3. שותפים וצדדים שלישיים</h2>
+      <ul>
+        <li><strong>Stripe</strong> — לעיבוד תשלומים. <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">מדיניות הפרטיות של Stripe</a>.</li>
+        <li><strong>ספק האירוח</strong> (Railway / Render וכד׳) — לאחסון השרתים ובסיס הנתונים, באזורים העומדים בתקני אבטחה מקובלים.</li>
+        <li>איננו מוכרים, משכירים או חושפים את המידע האישי שלך לצדדים שלישיים למטרות שיווק.</li>
+        <li>אנו עשויים לחשוף מידע אם נדרשנו לכך על-פי חוק, צו בית-משפט או דרישה רשמית של רשות מוסמכת.</li>
+      </ul>
+
+      <h2>4. אחסון ואבטחה</h2>
+      <ul>
+        <li>סיסמאות נשמרות אצלנו <strong>מגובבות (hashed)</strong> בלבד באמצעות אלגוריתם bcrypt — לא בטקסט גלוי.</li>
+        <li>התקשורת עם השרת מתבצעת מעל HTTPS עם הצפנת תווך.</li>
+        <li>סשני זיהוי מבוצעים באמצעות JWT בעוגייה מסוג httpOnly, עם תוקף מוגבל (8 שעות).</li>
+        <li>למרות אמצעי האבטחה — אף שירות אינטרנט אינו חסין לחלוטין. השימוש בשירות הוא בהבנה זו.</li>
+      </ul>
+
+      <h2>5. עוגיות (Cookies)</h2>
+      <p>
+        אנו עושים שימוש בעוגייה אחת בלבד: <code>epsos_session</code>, עוגיית הזדהות מסוג httpOnly המשמשת לזיהוי לאחר התחברות. איננו משתמשים בעוגיות שיווק, ריטרגטינג, פיקסלים של רשתות חברתיות או בעוגיות צד שלישי לצורכי פרסום. בנוסף, אנו שומרים אצלך ב-localStorage העדפת שפה והעתק זמני של תשובות הסימולציה — אלה לא נשלחים לשרת מעבר לדרוש.
+      </p>
+
+      <h2>6. זכויותיך</h2>
+      <p>
+        בהתאם לחוק הגנת הפרטיות, התשמ"א-1981 וחוקי הגנת מידע נוספים החלים, באפשרותך:
+      </p>
+      <ul>
+        <li>לעיין במידע שנשמר עליך.</li>
+        <li>לבקש תיקון של מידע שאינו מדויק.</li>
+        <li>לבקש את מחיקת חשבונך והמידע המזהה אותך, בכפוף לחובות שמירה משפטיות (למשל רישומי תשלום).</li>
+        <li>לבטל את הסכמתך לעיבוד המידע — ובמקרה זה, ייתכן שלא נוכל להמשיך לספק לך את השירות.</li>
+      </ul>
+      <p>פניות בעניין זכויות אלו: <a href="mailto:privacy@onemoreexam.com">privacy@onemoreexam.com</a>.</p>
+
+      <h2>7. שמירת מידע</h2>
+      <p>
+        מידע חשבון נשמר כל עוד החשבון פעיל. רישומי תשלום נשמרים בהתאם לדרישות החוק (לרוב 7 שנים). תשובות סימולציה נשמרות בעיקר בדפדפן שלך; ניתן למחקן בכל עת באמצעות איפוס מצב הבחינה.
+      </p>
+
+      <h2>8. קטינים</h2>
+      <p>
+        השירות אינו מיועד למשתמשים מתחת לגיל 16. אם נודע לנו שמשתמש מתחת לגיל זה רשום, נסיר את חשבונו.
+      </p>
+
+      <h2>9. שינויים במדיניות</h2>
+      <p>
+        אנו רשאים לעדכן מדיניות זו מעת לעת. גרסה מעודכנת תפורסם בעמוד זה עם תאריך עדכון. שינוי מהותי יודיע למשתמשים גם בדוא"ל.
+      </p>
+
+      <h2>10. יצירת קשר</h2>
+      <p>
+        בשאלות בנושאי פרטיות ניתן לפנות לכתובת: <a href="mailto:privacy@onemoreexam.com">privacy@onemoreexam.com</a>.
+      </p>
+
+      <div class="legal-actions">
+        <a href="/" class="btn" data-i18n="fb_back_home">חזרה לעמוד הבית</a>
+        <a href="/terms" class="btn">תנאי שימוש</a>
+        <a href="/refund" class="btn">מדיניות החזרים</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site">
+    © <span class="gold">ONE MORE</span> · MOR Biographical Exam Simulator
+    <div class="foot-links">
+      <a href="/pricing">מחירים</a>
+      <a href="/terms">תנאי שימוש</a>
+      <a href="/privacy">מדיניות פרטיות</a>
+      <a href="/refund">מדיניות החזרים</a>
+    </div>
+  </footer>
+
+  <script src="js/i18n.js"></script>
+  <script>
+    try { epsos.bindLangSwitch(); epsos.applyLang(); } catch (e) {}
+  </script>
+</body>
+</html>
